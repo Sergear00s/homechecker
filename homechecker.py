@@ -1,3 +1,4 @@
+import logging.handlers
 import requests
 import ftlib
 import config
@@ -5,9 +6,10 @@ import time
 import logging
 
 file_handler = logging.handlers.RotatingFileHandler("homechecker.log", maxBytes=5000, backupCount=5)
-file_handler.setFormatter(logging.Formatter('%(name)s - %(levelname)s - %(message)s'))
-logger = logging.getLogger("Homechecker")
+file_handler.setFormatter(logging.Formatter('[%(asctime)s - %(name)s - %(levelname)s - %(message)s]'))
+logger = logging.getLogger("homechecker")
 logger.addHandler(file_handler)
+logger.setLevel(logging.DEBUG)
 
 api = ftlib.Ftlib(config.INTRA_APP_PUBLIC, config.INTRA_APP_SECRET)
 hed = {
@@ -62,6 +64,4 @@ def main():
         logger.debug("Checking...")
         check_fails()
         time.sleep(config.PERCHECK_TIME_IN_SEC)
-
-
 main()
