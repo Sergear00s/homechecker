@@ -5,7 +5,7 @@ import config
 import time
 import logging
 
-file_handler = logging.handlers.RotatingFileHandler("homechecker.log", maxBytes=5000, backupCount=5)
+file_handler = logging.handlers.RotatingFileHandler("logs/homechecker.log", maxBytes=5000, backupCount=5)
 file_handler.setFormatter(logging.Formatter('[%(asctime)s - %(name)s - %(levelname)s - %(message)s]'))
 logger = logging.getLogger("homechecker")
 logger.addHandler(file_handler)
