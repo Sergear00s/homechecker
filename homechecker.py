@@ -6,14 +6,12 @@ import logging
 import paramiko
 import re
 
-file_handler = logging.handlers.RotatingFileHandler("logs/homechecker.log", maxBytes=5000, backupCount=5)
+file_handler = logging.handlers.RotatingFileHandler("logs/homechecker.log", maxBytes=config.LOG_FILE_SIZE, backupCount=5)
 file_handler.setFormatter(logging.Formatter('[%(asctime)s - %(name)s - %(levelname)s - %(message)s]'))
 logger = logging.getLogger("homechecker")
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
-pkey = None
-with open(config.PRIVATE_KEY_PATH, "r") as fi:
-    pkey = fi.read()
+pkey = paramiko.RSAKey.from_private_key_file(config.PRIVATE_KEY_PATH)
 
 COMMAND= "who | awk '{print $1}' | sort | uniq | grep -v 'bocal'"
 hed = {
@@ -36,8 +34,9 @@ def execute_cmd(target, username, key, command):
             stdin, stdout, stderr = ssh.exec_command(command)
             out = stdout.read().decode()
             err = stderr.read().decode()
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"Error while executing command! - {e}")
+        
     return (out, err)
 
 
@@ -53,8 +52,7 @@ def convert_to_ip(value: str) -> str:
     
 
 def tgt_to_addr(tgt) -> str:
-    """iqn.fr.42:k1m40s02.42istanbul.com.tr"""
-    f = a[10::]
+    f = tgt[10::]
     b = f[:8]
     return convert_to_ip(b)
 
@@ -97,9 +95,14 @@ def check_fails():
         tgt = i["exposed_to"]
         ips = tgt_to_addr(tgt)
         out, err = execute_cmd(ips, "bocal", pkey, COMMAND)
-        if (out is None or out != user):
+        if (out is None):
             close(tgt, user)
-        time.sleep(1)
+        else:
+            out = out.strip()
+            if out != user:
+                close(tgt, user)
+            else:
+                logger.info(f"User {user} is still active!")
 
 def main():
     if pkey == None:
