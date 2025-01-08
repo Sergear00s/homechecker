@@ -34,9 +34,14 @@ def execute_cmd(target, username, key, command):
             stdin, stdout, stderr = ssh.exec_command(command)
             out = stdout.read().decode()
             err = stderr.read().decode()
+    except paramiko.ssh_exception.NoValidConnectionsError:
+        logger.error(f"SSH connection unreachable for target: {target}")
+    except paramiko.AuthenticationException:
+        logger.error(f"Authentication error for target: {target}")
+        exit(1)
     except Exception as e:
-        logger.error(f"Error while executing command! - {e}")
-        
+        logger.error(f"An unexpected error occurred: {str(e)}")
+        exit(1)
     return (out, err)
 
 
