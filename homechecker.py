@@ -40,26 +40,31 @@ def execute_cmd(target, username, key, command):
         logger.error(f"Authentication error for target: {target}")
         exit(1)
     except Exception as e:
-        logger.error(f"An unexpected error occurred: {str(e)}")
+        if e.errno == 110:
+            logger.error(f"Connection Timeout:{target}, {str(e)}")
+            return None, None
+        logger.error(f"Error!, {e}")
         exit(1)
     return (out, err)
 
 
-def convert_to_ip(value: str) -> str:
-    pattern = r'^k(\d+)m(\d+)s(\d+)$'
-    match = re.match(pattern, value)
-    if not match:
-        raise ValueError("format error")
-    part1 = int(match.group(1))  
-    part2 = int(match.group(2))
-    part3 = int(match.group(3)) 
-    return f"10.1{part1}.{part2}.{part3}"
+# def convert_to_ip(value: str) -> str:
+#     pattern = r'^k(\d+)m(\d+)s(\d+)$'
+#     match = re.match(pattern, value)
+#     if not match:
+#         raise ValueError("format error")
+#     part1 = int(match.group(1))  
+#     part2 = int(match.group(2))
+#     part3 = int(match.group(3)) 
+#     return f"10.1{part1}.{part2}.{part3}"
     
 
-def tgt_to_addr(tgt) -> str:
-    f = tgt[10::]
-    b = f[:8]
-    return convert_to_ip(b)
+# def tgt_to_addr(tgt) -> str:
+#     f = tgt[10::]
+#     b = f[:8]
+#     return convert_to_ip(b)
+
+
 
 def list_homes() -> list:
     homes = requests.get(f"{config.HOMEMAKER_ENDPOINT}/homes", headers=hed)
@@ -83,13 +88,13 @@ def close(iqn : str, login : str):
     "login": login}
     resp = requests.put(f"{config.HOMEMAKER_ENDPOINT}/homes/umount", headers=hed, json=data)
     if (resp.status_code == 409):
-        logger.error("Runtime error! intra_app resp.status_code = 409")
+        logger.error("Runtime error! resp.status_code = 409")
         raise RuntimeError(f"No home with this name exposed! {iqn}, {login}")
     if (resp.status_code == 400):
-        logger.error("Runtime error! intra_app resp.status_code = 400")
+        logger.error("Runtime error! resp.status_code = 400")
         raise RuntimeError("error")
     if (resp.status_code == 404):
-        logger.error("Runtime error! intra_app resp.status_code = 404")
+        logger.error("Runtime error! resp.status_code = 404")
         raise RuntimeWarning(f"couldnt close for iqn : {iqn}, login : {login}")
     logger.info(f"Iqn - > {iqn} , {login} is closed")
 
@@ -98,7 +103,8 @@ def check_fails():
     for i in actives:
         user = i["identifier"]
         tgt = i["exposed_to"]
-        ips = tgt_to_addr(tgt)
+        # ips = tgt_to_addr(tgt)
+        ips = tgt[10::]
         out, err = execute_cmd(ips, "bocal", pkey, COMMAND)
         if (out is None):
             close(tgt, user)
@@ -115,5 +121,6 @@ def main():
     while True:
         logger.debug("Checking...")
         check_fails()
+        logger.debug("Checked")
         time.sleep(config.PERCHECK_TIME_IN_SEC)
 main()
