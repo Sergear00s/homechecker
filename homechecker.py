@@ -6,7 +6,7 @@ import logging
 import paramiko
 import re
 
-file_handler = logging.handlers.RotatingFileHandler("logs/homechecker.log", maxBytes=config.LOG_FILE_SIZE, backupCount=5)
+file_handler = logging.handlers.RotatingFileHandler("/var/log/homechecker.log", maxBytes=config.LOG_FILE_SIZE, backupCount=5)
 file_handler.setFormatter(logging.Formatter('[%(asctime)s - %(name)s - %(levelname)s - %(message)s]'))
 logger = logging.getLogger("homechecker")
 logger.addHandler(file_handler)
